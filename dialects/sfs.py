@@ -1,7 +1,6 @@
 from envelope.core.message import ContextAction
 from envelope.messages.common import Status
 from envelope.messages.errors import BadRequestError
-from envelope.messages.errors import UnauthorizedError
 from envelope.utils import websocket_send
 from voteit.meeting.models import MeetingGroup
 from voteit.meeting.permissions import MeetingGroupPermissions
