@@ -72,6 +72,21 @@ class SFSTests(TestCase):
         self.mem_hangaround.refresh_from_db()
         self.assertEqual(2, self.mem_hangaround.votes)
 
+    def test_set_vote_dist_others_cleared(self):
+        self.mem_lead_hat.votes = 4
+        self.mem_lead_hat.save()
+        msg = self._mk_message(
+            self.lead_hat,
+            weights=[
+                {"user": self.hangaround.pk, "weight": 4},
+            ],
+        )
+        msg.run_job()
+        self.mem_lead_hat.refresh_from_db()
+        self.assertEqual(None, self.mem_lead_hat.votes)
+        self.mem_hangaround.refresh_from_db()
+        self.assertEqual(4, self.mem_hangaround.votes)
+
     def test_set_vote_dist_bad_count(self):
         msg = self._mk_message(
             self.lead_hat,

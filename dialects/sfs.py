@@ -81,6 +81,12 @@ class SFSSetDelegationVoters(ContextAction):
                 self,
                 msg=f"The following user PKs aren't potential voters: {', '.join(str(x) for x in non_potential_voters)}.",
             )
+        # Clear all users that aren't specified and have votes
+        for membership in meeting_group.memberships.filter(
+            votes__gt=0, user_id__in=group_member_pks - user_pks
+        ):
+            membership.votes = None
+            membership.save()
         for vw in self.data.weights:
             meeting_group.memberships.update_or_create(
                 user_id=vw.user,
