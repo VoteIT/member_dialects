@@ -44,6 +44,7 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
     handles_vote_weight = False
     handles_personal_vote = True
     available = False  # Not installed manually
+    allow_trigger = True
 
     def get_voters(self, update_memberships=False, **kwargs) -> dict[int, int]:
         relevant_roles = list(
