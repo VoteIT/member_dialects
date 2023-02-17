@@ -6,7 +6,7 @@ from voteit.meeting.models import MeetingGroup
 from voteit.meeting.permissions import MeetingGroupPermissions
 from voteit.meeting.permissions import MeetingPermissions
 from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
-from voteit.messaging.decorators import outgoing
+from voteit.messaging.decorators import incoming
 from voteit.poll.app.er_policies.group_votes_before_poll import GroupVotesBeforePoll
 from voteit.poll.schemas import VotersWeightsSchema
 
@@ -17,7 +17,7 @@ class SFSSetDelegationVotersSchema(VotersWeightsSchema):
     meeting_group: int
 
 
-@outgoing
+@incoming
 class SFSSetDelegationVoters(ContextAction):
     name = "sfs.set_delegation_voters"
     permission = MeetingGroupPermissions.VIEW
