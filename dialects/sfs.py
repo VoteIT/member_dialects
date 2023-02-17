@@ -5,6 +5,8 @@ from envelope.utils import websocket_send
 from voteit.meeting.models import MeetingGroup
 from voteit.meeting.permissions import MeetingGroupPermissions
 from voteit.meeting.permissions import MeetingPermissions
+from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
+from voteit.messaging.decorators import outgoing
 from voteit.poll.app.er_policies.group_votes_before_poll import GroupVotesBeforePoll
 from voteit.poll.schemas import VotersWeightsSchema
 
@@ -15,6 +17,7 @@ class SFSSetDelegationVotersSchema(VotersWeightsSchema):
     meeting_group: int
 
 
+@outgoing
 class SFSSetDelegationVoters(ContextAction):
     name = "sfs.set_delegation_voters"
     permission = MeetingGroupPermissions.VIEW
@@ -58,7 +61,7 @@ class SFSSetDelegationVoters(ContextAction):
                 self,
                 msg="You're not delegation leader or moderator.",
             )
-        # Check that these users are members of the group
+        # Check that these users are members of the group + potential voters
         user_pks = {x.user for x in self.data.weights}
         group_member_pks = set(meeting_group.members.all().values_list("pk", flat=True))
         non_members = user_pks - group_member_pks
@@ -66,6 +69,17 @@ class SFSSetDelegationVoters(ContextAction):
             raise BadRequestError.from_message(
                 self,
                 msg=f"The following user PKs aren't members of that group: {', '.join(str(x) for x in non_members)}.",
+            )
+        potential_voter_user_pks = set(
+            meeting.roles.filter(
+                user_id__in=user_pks, assigned__contains=[str(ROLE_POTENTIAL_VOTER)]
+            ).values_list("user_id", flat=True)
+        )
+        non_potential_voters = user_pks - potential_voter_user_pks
+        if non_potential_voters:
+            raise BadRequestError.from_message(
+                self,
+                msg=f"The following user PKs aren't potential voters: {', '.join(str(x) for x in non_potential_voters)}.",
             )
         for vw in self.data.weights:
             meeting_group.memberships.update_or_create(

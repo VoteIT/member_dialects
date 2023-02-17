@@ -32,10 +32,10 @@ class SFSTests(TestCase):
             groupid="doctor_hats", votes=4
         )
         cls.moderator = User.objects.create(username="moderator")
-        cls.meeting.add_roles(cls.moderator, ROLE_MODERATOR)
+        cls.meeting.add_roles(cls.moderator, ROLE_MODERATOR, ROLE_POTENTIAL_VOTER)
         cls.lead_hat = User.objects.create(username="lead_hat")
         cls.hangaround = User.objects.create(username="hangaround")
-        cls.meeting.add_roles(cls.hangaround, ROLE_PARTICIPANT)
+        cls.meeting.add_roles(cls.hangaround, ROLE_PARTICIPANT, ROLE_POTENTIAL_VOTER)
         cls.mem_lead_hat: GroupMembership = cls.doctor_hats.memberships.create(
             user=cls.lead_hat, role=cls.leader_role
         )
@@ -99,6 +99,24 @@ class SFSTests(TestCase):
             msg.run_job()
         self.assertEqual(
             {"msg": "This group has no votes."},
+            cm.exception.data.dict(),
+        )
+
+    def test_set_vote_dist_not_potential_voter(self):
+        self.meeting.remove_roles(self.hangaround, ROLE_POTENTIAL_VOTER)
+        msg = self._mk_message(
+            self.lead_hat,
+            weights=[
+                {"user": self.lead_hat.pk, "weight": 2},
+                {"user": self.hangaround.pk, "weight": 2},
+            ],
+        )
+        with self.assertRaises(BadRequestError) as cm:
+            msg.run_job()
+        self.assertEqual(
+            {
+                "msg": f"The following user PKs aren't potential voters: {self.hangaround.pk}."
+            },
             cm.exception.data.dict(),
         )
 
