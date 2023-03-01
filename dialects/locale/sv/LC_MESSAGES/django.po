@@ -1,0 +1,36 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-03-01 14:06+0100\n"
+"PO-Revision-Date: 2023-03-01 14:11+0100\n"
+"Last-Translator: Robin Harms Oredsson <robin@betahaus.net>\n"
+"Language-Team: \n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+
+#: dialects/main_or_subst_er.py:42
+msgid "Main/Substitute + active"
+msgstr "Ordinarie/Ersättare + aktiv"
+
+#: dialects/main_or_subst_er.py:44
+msgid ""
+"Voters assigned depending on number of votes in groups. Votes are assigned "
+"to main first, then substitutes if there are any left. If there aren't "
+"enough votes for everyone, they're assigned in the order of when users "
+"became active. Electoral registries will be created and assigned when a poll "
+"starts."
+msgstr ""
+"Röster delas ut baserat på antal röster varje grupp har. Först får "
+"ordinarie, sedan ersättare om det finns röster kvar. Om det inte finns "
+"tillräckligt med röster för alla så delas de ut baserat på när användarna "
+"blev aktiva. Röstlängder skapas och tilldelas när omröstningar startas."
