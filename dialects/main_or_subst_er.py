@@ -39,7 +39,14 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
     """
 
     name = "main_subst_active"
-    title = _("Main/Substitute + active before poll")
+    title = _("Main/Substitute + active")
+    description = _(
+        "Voters assigned depending on number of votes in groups. Votes are assigned to main first, "
+        "then substitutes if there are any left. "
+        "If there aren't enough votes for everyone, "
+        "they're assigned in the order of when users became active. "
+        "Electoral registries will be created and assigned when a poll starts."
+    )
     logger = logger
     handles_vote_weight = False
     handles_personal_vote = True
