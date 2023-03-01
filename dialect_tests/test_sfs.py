@@ -101,6 +101,23 @@ class SFSTests(TestCase):
             cm.exception.data.dict(),
         )
 
+    def test_set_vote_dist_meeting_closed(self):
+        self.meeting.state = "closed"
+        self.meeting.save()
+        msg = self._mk_message(
+            self.lead_hat,
+            weights=[
+                {"user": self.lead_hat.pk, "weight": 2},
+                {"user": self.hangaround.pk, "weight": 2},
+            ],
+        )
+        with self.assertRaises(BadRequestError) as cm:
+            msg.run_job()
+        self.assertEqual(
+            {"msg": "Meeting closed."},
+            cm.exception.data.dict(),
+        )
+
     def test_set_vote_dist_no_votes(self):
         self.doctor_hats.votes = None
         self.doctor_hats.save()

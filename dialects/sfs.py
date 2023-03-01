@@ -2,6 +2,7 @@ from envelope.core.message import ContextAction
 from envelope.messages.common import Status
 from envelope.messages.errors import BadRequestError
 from envelope.utils import websocket_send
+from voteit.core.rules import is_not_finished
 from voteit.meeting.models import MeetingGroup
 from voteit.meeting.permissions import MeetingGroupPermissions
 from voteit.meeting.permissions import MeetingPermissions
@@ -29,6 +30,11 @@ class SFSSetDelegationVoters(ContextAction):
     def run_job(self):
         self.assert_perm()
         meeting_group: MeetingGroup = self.context
+        if not is_not_finished(self.user, meeting_group.meeting):
+            raise BadRequestError.from_message(
+                self,
+                msg="Meeting closed.",
+            )
         # Does the group have votes?
         if not meeting_group.votes:
             raise BadRequestError.from_message(
