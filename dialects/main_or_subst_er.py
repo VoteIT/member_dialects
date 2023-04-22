@@ -129,12 +129,3 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
             user__in=self.meeting.active_users.values_list("user", flat=True),
             role__role_id__in=[MAIN_ROLE_ID, SUBSTITUTE_ROLE_ID],
         ).exists()
-
-    def create_er(self, force=False, **kwargs) -> ElectoralRegister:
-        if force or self.new_er_needed(**kwargs):
-            er = self.meeting.electoral_registers.create(source=self.name)
-            er.set_voters_from_dict(self.get_voters(update_memberships=True, **kwargs))
-            self.meeting.latest_er = er  # Clear cached
-            new_er_created.send(instance=er, sender=er.__class__)
-            return er
-        return self.meeting.latest_er
