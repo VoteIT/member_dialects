@@ -49,7 +49,6 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
     )
     logger = logger
     handles_vote_weight = False
-    handles_personal_vote = True
     available = False  # Not installed manually
     allow_trigger = True
 
