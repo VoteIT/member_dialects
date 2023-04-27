@@ -9,3 +9,5 @@ class DialectsConfig(AppConfig):
     def ready(self):
         from . import sfs
         from . import main_or_subst_er
+        from . import skk_fum
+        from . import skr_agarrad
