@@ -28,7 +28,7 @@ FILE_KOMMUNER = "agarrad_kommuner.tsv"
 class CSVRows(BaseModel):
     rows: conlist(
         conlist(
-            constr(to_lower=True, strip_whitespace=True),
+            constr(strip_whitespace=True),
             min_items=2,
             max_items=2,
         ),
@@ -61,7 +61,7 @@ class CreateSKRGroups(DialectScript):
             data = CSVRows(rows=f.readlines())
             for row in data.rows:
                 yield MeetingGroup(
-                    meeting=meeting, groupid=row[0], title=row[1], tags=[tag]
+                    meeting=meeting, groupid=row[0].lower(), title=row[1], tags=[tag]
                 )
             # In case this dialect is ever installable for an existing meeting, we may need to change this
             # for row in data.rows:
