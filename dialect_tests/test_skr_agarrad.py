@@ -1,3 +1,5 @@
+from collections import Counter
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
@@ -29,7 +31,7 @@ User = get_user_model()
 class SKKFumERPTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.meeting: Meeting = Meeting.objects.create()
+        cls.meeting: Meeting = Meeting.objects.create(state="ongoing")
         handler = dialect_registry.get_merged_handler("skr_agarrad")
         handler.install(cls.meeting)
         cls.mimmi = cls.meeting.participants.create(username="mimmi")
@@ -41,8 +43,8 @@ class SKKFumERPTests(TestCase):
         #         component_name=ActiveUsersComponent.name, state=EnabledWf.ON
         #     )
         #     self.meeting.active_users.create(user=self.user_a)
-
-        for user in cls.mimmi, cls.robin, cls.anna, cls.teresa:
+        cls.users = cls.mimmi, cls.robin, cls.anna, cls.teresa
+        for user in cls.users:
             cls.meeting.add_roles(user, ROLE_PARTICIPANT, ROLE_POTENTIAL_VOTER)
             cls.meeting.active_users.create(user=user)
         cls.grp_gotland = cls.meeting.groups.get(groupid="0980")
@@ -53,6 +55,11 @@ class SKKFumERPTests(TestCase):
         cls.grp_goteborg.members.add(cls.anna)
         cls.grp_skr = cls.meeting.groups.get(groupid="skr")
         cls.grp_skr.members.add(cls.teresa)
+        # Poll fixtures
+        cls.ai = cls.meeting.agenda_items.create()
+        cls.prop = cls.ai.proposals.create()
+        cls.poll = cls.meeting.polls.create(method_name="simple")
+        cls.poll.proposals.add(cls.prop)
 
     @property
     def _cut(self):
@@ -117,3 +124,13 @@ class SKKFumERPTests(TestCase):
         erp = self._mk_one()
         with self.assertRaises(ElectoralRegisterError):
             erp.get_voters()
+
+    def test_categorize_vote_power(self):
+        self.poll.upcoming()
+        self.poll.ongoing()
+        self.poll.save()
+        for user in self.users:
+            self.poll.votes.create(user=user, vote="yes")
+        erp = self._mk_one()
+        result = erp.categorize_vote_power(self.poll)
+        self.assertEqual({"yes": Counter({"kommun": 3, "skr": 2})}, result)

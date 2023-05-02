@@ -1,5 +1,8 @@
+from __future__ import annotations
 import os.path
+from collections import Counter
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.db import models
@@ -14,8 +17,13 @@ from voteit.meeting.models import Meeting
 from voteit.meeting.models import MeetingGroup
 from voteit.poll.abcs import ElectoralRegisterPolicy
 from voteit.poll.exceptions import ElectoralRegisterError
-from voteit.poll.models import Poll
+
 from voteit.poll.registries import er_policy
+
+if TYPE_CHECKING:
+    from voteit.poll.models import Poll
+    from voteit.poll.models import Vote
+
 
 logger = getLogger(__name__)
 SKR_GROUP_ID = "skr"
@@ -133,3 +141,38 @@ class SKRAgarradERP(ElectoralRegisterPolicy):
 
     def pre_apply(self, poll: Poll, target: str):
         self.create_er()  # Won't trigger unless needed
+
+    def categorize_vote_power(self, poll: Poll) -> dict[str, Counter[str, int]]:
+        """
+        This may not be correct if delegations or presence changed afterwards.
+        We don't cate about delegations right now since it will probably be obvious.
+        """
+        votes_qs = poll.votes.filter(abstain=False)
+        skr = self.meeting.groups.filter(groupid=SKR_GROUP_ID).first()
+        skr_userpks = skr.members.all().values_list("pk", flat=True)
+        kommun_groups_qs = self.meeting.groups.filter(tags__contains=[KOMMUN_TAG])
+        kommun_userpks = GroupMembership.objects.filter(
+            meeting_group__in=kommun_groups_qs
+        ).values_list("user_id", flat=True)
+        region_groups_qs = self.meeting.groups.filter(tags__contains=[REGION_TAG])
+        region_userpks = GroupMembership.objects.filter(
+            meeting_group__in=region_groups_qs
+        ).values_list("user_id", flat=True)
+        categorized = {}
+        for vote in votes_qs:
+            vote: Vote
+            category = "unknown"
+            if vote.user_id in kommun_userpks:
+                category = KOMMUN_TAG
+            elif vote.user_id in region_userpks:
+                category = REGION_TAG
+            elif vote.user_id in skr_userpks:
+                category = SKR_GROUP_ID
+            vdata_counter = categorized.setdefault(vote.vote_data, Counter())
+            try:
+                vw = poll.electoral_register.weight_dict[vote.user_id]
+            except KeyError:
+                logger.warning("User %s not found in vote weight", vote.user_id)
+                continue
+            vdata_counter[category] += vw
+        return categorized
