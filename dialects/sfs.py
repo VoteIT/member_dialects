@@ -1,4 +1,7 @@
-from envelope.core.message import ContextAction
+try:
+    from envelope.core.message import ContextAction
+except ImportError:
+    from envelope.deferred_jobs.message import ContextAction
 from envelope.messages.common import Status
 from envelope.messages.errors import BadRequestError
 from envelope.utils import websocket_send
