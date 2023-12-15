@@ -81,7 +81,7 @@ class SFSSetDelegationVoters(ContextAction):
             )
         potential_voter_user_pks = set(
             meeting.roles.filter(
-                user_id__in=user_pks, assigned__contains=[str(ROLE_POTENTIAL_VOTER)]
+                user_id__in=user_pks, assigned__contains=ROLE_POTENTIAL_VOTER
             ).values_list("user_id", flat=True)
         )
         non_potential_voters = user_pks - potential_voter_user_pks

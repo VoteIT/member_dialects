@@ -73,7 +73,7 @@ class SKKFum(ElectoralRegisterPolicy):
         role_suppleant: GroupRole = relevant_roles[2]
         groups_with_votes = self.meeting.groups.filter(votes__gt=0)
         potential_voters = self.meeting.roles.filter(
-            assigned__contains=[ROLE_POTENTIAL_VOTER]
+            assigned__contains=ROLE_POTENTIAL_VOTER
         ).values_list("user_id", flat=True)
         if active_enabled_for_meeting(self.meeting):
             potential_voters = self.meeting.active_users.filter(
