@@ -3,32 +3,18 @@ from collections import Counter
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from dialects.skk_fum import DELEGAT_FULLMAKT
-from dialects.skk_fum import DELEGAT
-from dialects.skk_fum import SUPPLEANT
-
-from dialects.sfs import DELEGATION_LEADER_ROLE_ID
 from dialects.skr_agarrad import KOMMUN_TAG
 from dialects.skr_agarrad import REGION_TAG
-from envelope.messages.errors import BadRequestError
-from envelope.messages.errors import UnauthorizedError
-from voteit.active.components import ActiveUsersComponent
-from voteit.core.workflows import EnabledWf
 from voteit.meeting.dialects import dialect_registry
-from voteit.meeting.models import GroupMembership
-from voteit.meeting.models import GroupRole
 from voteit.meeting.models import Meeting
-from voteit.meeting.models import MeetingGroup
-from voteit.meeting.roles import ROLE_MODERATOR
 from voteit.meeting.roles import ROLE_PARTICIPANT
 from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
-from voteit.poll.app.er_policies.group_votes_before_poll import GroupVotesBeforePoll
 from voteit.poll.exceptions import ElectoralRegisterError
 
 User = get_user_model()
 
 
-class SKKFumERPTests(TestCase):
+class SKRAgarradERPTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.meeting: Meeting = Meeting.objects.create(state="ongoing")
@@ -38,11 +24,6 @@ class SKKFumERPTests(TestCase):
         cls.robin = cls.meeting.participants.create(username="robin")
         cls.anna = cls.meeting.participants.create(username="anna")
         cls.teresa = cls.meeting.participants.create(username="teresa")
-
-        #     self.meeting.components.create(
-        #         component_name=ActiveUsersComponent.name, state=EnabledWf.ON
-        #     )
-        #     self.meeting.active_users.create(user=self.user_a)
         cls.users = cls.mimmi, cls.robin, cls.anna, cls.teresa
         for user in cls.users:
             cls.meeting.add_roles(user, ROLE_PARTICIPANT, ROLE_POTENTIAL_VOTER)
