@@ -9,9 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from voteit.meeting.models import GroupMembership
 from voteit.poll.abcs import ElectoralRegisterPolicy
 from voteit.poll.exceptions import ElectoralRegisterError
-from voteit.poll.models import ElectoralRegister
 from voteit.poll.registries import er_policy
-from voteit.poll.signals import new_er_created
+
 
 if TYPE_CHECKING:
     from voteit.poll.models import Poll
