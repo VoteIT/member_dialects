@@ -50,6 +50,7 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
     handles_vote_weight = False
     available = False  # Not installed manually
     allow_trigger = True
+    handles_active_check = True
 
     def get_voters(self, update_memberships=False, **kwargs) -> dict[int, int]:
         relevant_roles = list(
