@@ -115,10 +115,3 @@ class SKKFum(ElectoralRegisterPolicy):
 
     def pre_apply(self, poll: Poll, target: str):
         self.create_er()  # Won't trigger unless needed
-
-    def poll_will_have_voters(self, **kwargs) -> bool:
-        return GroupMembership.objects.filter(
-            meeting_group__in=self.meeting.groups.filter(votes__gt=0),
-            # user__in=self.meeting.active_users.values_list("user", flat=True),
-            role__role_id__in=[SUPPLEANT, DELEGAT, DELEGAT_FULLMAKT],
-        ).exists()

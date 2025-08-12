@@ -116,21 +116,3 @@ class MainSubstActivePolicyTests(TestCase):
                 .values_list("user_id", flat=True)
             ),
         )
-
-    def test_poll_will_have_voters(self):
-        self.assertTrue(
-            self.meeting.er_policy.poll_will_have_voters(),
-        )
-
-    def test_poll_will_have_voters_no_votes_on_group(self):
-        self.the_voters_group.votes = 0
-        self.the_voters_group.save()
-        self.assertFalse(
-            self.meeting.er_policy.poll_will_have_voters(),
-        )
-
-    def test_poll_will_have_voters_no_active(self):
-        self.meeting.active_users.all().delete()
-        self.assertFalse(
-            self.meeting.er_policy.poll_will_have_voters(),
-        )

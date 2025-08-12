@@ -142,9 +142,6 @@ class SKRAgarradERP(ElectoralRegisterPolicy):
     def pre_apply(self, poll: Poll, target: str):
         self.create_er()  # Won't trigger unless needed
 
-    def poll_will_have_voters(self, **kwargs):
-        return True
-
     def categorize_vote_power(self, poll: Poll) -> dict[str, Counter[str, int]]:
         """
         This may not be correct if delegations or presence changed afterwards.
