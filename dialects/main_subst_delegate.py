@@ -89,7 +89,11 @@ class MainSubstDelegatePolicy(ElectoralRegisterPolicy):
     vote_transfer_policy = MainAndSubstVT.name
 
     def get_voters(self, update_memberships=False, **kwargs) -> dict[int, int]:
-        voters = set(self.meeting.get_userids_with_roles(ROLE_POTENTIAL_VOTER))
+        voters = set(
+            self.meeting.groups.filter(
+                memberships__role__role_id=MAIN_ROLE_ID
+            ).values_list("memberships__user_id", flat=True)
+        )
         for vt in self.meeting.vote_transfers.filter(source_id__in=voters):
             voters.add(vt.target_id)
             voters.remove(vt.source_id)
