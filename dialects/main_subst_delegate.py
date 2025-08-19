@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
-from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
 from voteit.poll.abcs import ElectoralRegisterPolicy
 from voteit.poll.abcs import VoteTransferPolicy
 from voteit.poll.models import VoteTransfer
@@ -49,6 +48,15 @@ class MainAndSubstVT(VoteTransferPolicy):
             raise ValidationError(
                 {
                     "target": f"User {target} already delegates their vote or has received a vote from someone else."
+                }
+            )
+        # Target may never be main in another group
+        if self.meeting.groups.filter(
+            memberships__user=target, memberships__role__role_id=MAIN_ROLE_ID
+        ).exists():
+            raise ValidationError(
+                {
+                    "target": "Target user is already a main delegate, maybe within another group?"
                 }
             )
         # Source and target must have intersecting groups

@@ -140,7 +140,7 @@ class MainAndSubstDelegateVTTests(APITestCase, FixtureMixin):
         self.assertEqual(
             {
                 "target": [
-                    "Source and target user must have roles within the same group."
+                    "Target user is already a main delegate, maybe within another group?"
                 ]
             },
             response.json(),
