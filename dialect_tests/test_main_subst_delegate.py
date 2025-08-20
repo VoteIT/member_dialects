@@ -1,9 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
-from voteit.active.components import ActiveUsersComponent
-from voteit.core.workflows import EnabledWf
 from voteit.meeting.models import GroupMembership
 from voteit.meeting.models import GroupRole
 from voteit.meeting.models import Meeting
@@ -72,13 +71,6 @@ class FixtureMixin:
         cls.mem_four: GroupMembership = cls.the_voters_group.memberships.create(
             user=cls.subst4, role=cls.subst_role
         )
-        # Enable active component
-        cls.component = cls.meeting.components.create(
-            component_name=ActiveUsersComponent.name, state=EnabledWf.ON
-        )
-        # Set active users
-        for user in users:
-            cls.meeting.active_users.create(user=user)
 
 
 class MainAndSubstDelegateTests(TestCase, FixtureMixin):
@@ -96,6 +88,64 @@ class MainAndSubstDelegateTests(TestCase, FixtureMixin):
         self.assertEqual(
             {self.subst3.pk: 1, self.main2.pk: 1}, self.meeting.er_policy.get_voters()
         )
+
+    def test_target_receives_role_main_causes_cleanup(self):
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        self.the_other_voters_group.memberships.create(
+            user=self.subst3, role=self.main_role
+        )
+        with self.assertRaises(ObjectDoesNotExist):
+            transfer.refresh_from_db()
+
+    def test_source_looses_irrelevant_duplicate_main_role(self):
+        irrelevant_role = self.the_other_voters_group.memberships.create(
+            user=self.main1, role=self.main_role
+        )
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        irrelevant_role.delete()
+        transfer.refresh_from_db()
+
+    def test_source_looses_main_role_delete(self):
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        self.mem_one.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            transfer.refresh_from_db()
+
+    def test_source_looses_main_role_reassign(self):
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        self.mem_one.role = self.subst_role
+        self.mem_one.save()
+        # This is the order the signal will be sent.
+        self.mem_one.signal_role_removed(role=self.main_role)
+        self.mem_one.signal_role_added()
+        with self.assertRaises(ObjectDoesNotExist):
+            transfer.refresh_from_db()
+
+    def test_target_looses_irrelevant_duplicate_subst_role(self):
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        irrelevant_role = self.the_other_voters_group.memberships.create(
+            user=self.subst3, role=self.subst_role
+        )
+        irrelevant_role.delete()
+        transfer.refresh_from_db()
+
+    def test_target_looses_subst_role(self):
+        transfer = self.meeting.vote_transfers.create(
+            source=self.main1, target=self.subst3
+        )
+        self.mem_three.delete()
+        with self.assertRaises(ObjectDoesNotExist):
+            transfer.refresh_from_db()
 
 
 class MainAndSubstDelegateVTTests(APITestCase, FixtureMixin):

@@ -5,8 +5,15 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
+
+from voteit.meeting.models import GroupMembership
+from voteit.meeting.models import GroupRole
+from voteit.meeting.signals import group_role_added
+from voteit.meeting.signals import group_role_removed
 from voteit.poll.abcs import ElectoralRegisterPolicy
 from voteit.poll.abcs import VoteTransferPolicy
 from voteit.poll.models import VoteTransfer
@@ -109,3 +116,42 @@ class MainSubstDelegatePolicy(ElectoralRegisterPolicy):
 
     def pre_apply(self, poll: Poll, target: str):
         self.create_er()  # Won't trigger unless needed
+
+
+@receiver(group_role_added)
+def check_role_added(*, instance: GroupMembership, role: GroupRole, **kwargs):
+    meeting = instance.meeting
+    if not isinstance(meeting.vote_transfer_policy, MainAndSubstVT):
+        return
+    # If target received main role, remove any active transfers
+    if role.role_id == MAIN_ROLE_ID:
+        meeting.vote_transfers.filter(target_id=instance.user_id).delete()
+
+
+@receiver(group_role_removed)
+def check_role_removed(*, instance: GroupMembership, role: GroupRole, **kwargs):
+    meeting = instance.meeting
+    if not isinstance(meeting.vote_transfer_policy, MainAndSubstVT):
+        return
+    if role.role_id == MAIN_ROLE_ID:
+        # First, check if there are any other main roles, if not, we can safely delete.
+        # But we only need to care if there's an existing vote transfer. In this dialect, it may only be one.
+        if vt := meeting.vote_transfers.filter(source_id=instance.user_id).first():
+            if GroupMembership.objects.filter(
+                user_id=vt.target_id,
+                role__role_id=SUBSTITUTE_ROLE_ID,
+                meeting_group_id=instance.meeting_group_id,
+            ).exists():
+                # Main was removed from intersecting group
+                vt.delete()
+    elif role.role_id == SUBSTITUTE_ROLE_ID:
+        # Are there any relevant transfers?
+        if vt := meeting.vote_transfers.filter(target_id=instance.user_id).first():
+            # Do the users belong to this group?
+            if GroupMembership.objects.filter(
+                user_id=vt.source_id,
+                role__role_id=MAIN_ROLE_ID,
+                meeting_group_id=instance.meeting_group_id,
+            ).exists():
+                # Subst was removed from intersecting group
+                vt.delete()
