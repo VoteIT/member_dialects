@@ -1,0 +1,35 @@
+[project]
+name = "member_dialects"
+version = "1.0.0"
+description = "VoteIT member dialects"
+authors = [
+    {name = "VoteIT dev team"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "voteit",
+    "django"
+]
+
+[project.urls]
+Homepage = "https://www.voteit.se/"
+
+[tool.poetry]
+packages = [
+    { include = "dialects" }
+]
+include = [
+    "dialects/**"
+]
+exclude = [
+    "dialect_tests/*"
+]
+
+
+[tool.ruff]
+include = ["pyproject.toml", "dialects/**/*.py", "src/**/*.py"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
