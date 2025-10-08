@@ -1,24 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from dialects.skk_fum import DELEGAT_FULLMAKT
-from dialects.skk_fum import DELEGAT
-from dialects.skk_fum import SUPPLEANT
-
-from dialects.sfs import DELEGATION_LEADER_ROLE_ID
-from envelope.messages.errors import BadRequestError
-from envelope.messages.errors import UnauthorizedError
 from voteit.active.components import ActiveUsersComponent
 from voteit.core.workflows import EnabledWf
 from voteit.meeting.dialects import dialect_registry
-from voteit.meeting.models import GroupMembership
-from voteit.meeting.models import GroupRole
 from voteit.meeting.models import Meeting
 from voteit.meeting.models import MeetingGroup
-from voteit.meeting.roles import ROLE_MODERATOR
-from voteit.meeting.roles import ROLE_PARTICIPANT
 from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
-from voteit.poll.app.er_policies.group_votes_before_poll import GroupVotesBeforePoll
+
+from dialects.skk_fum import DELEGAT_FULLMAKT
+from dialects.skk_fum import DELEGAT
+from dialects.skk_fum import SUPPLEANT
 
 User = get_user_model()
 
