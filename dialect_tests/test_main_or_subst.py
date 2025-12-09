@@ -78,6 +78,26 @@ class MainSubstActivePolicyTests(TestCase):
             {self.main1.pk: 1, self.main2.pk: 1}, self.meeting.er_policy.get_voters()
         )
 
+    def test_simple_with_disabled_active(self):
+        self.component.delete()
+        self.assertEqual(
+            {self.main1.pk: 1, self.main2.pk: 1}, self.meeting.er_policy.get_voters()
+        )
+        self.the_voters_group.votes = 5
+        self.the_voters_group.save()
+        self.assertEqual(
+            {self.main1.pk: 1, self.main2.pk: 1, self.subst3.pk: 1, self.subst4.pk: 1},
+            self.meeting.er_policy.get_voters(),
+        )
+
+    def test_n1(self):
+        for i in range(5):
+            group = self.meeting.groups.create(groupid=f"group_{i}", votes=3)
+            user = self.meeting.participants.create(username=f"user_{i}")
+            group.memberships.create(user=user, role=self.main_role)
+        with self.assertNumQueries(5):
+            self.meeting.er_policy.get_voters()
+
     def test_more_votes_than_users(self):
         self.the_voters_group.votes = 10
         self.the_voters_group.save()

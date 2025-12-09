@@ -5,7 +5,10 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from voteit.active.utils import active_enabled_for_meeting
 from voteit.meeting.models import GroupMembership
 from voteit.poll.abcs import ElectoralRegisterPolicy
 from voteit.poll.exceptions import ElectoralRegisterError
@@ -14,7 +17,6 @@ from voteit.poll.registries import er_policy
 
 if TYPE_CHECKING:
     from voteit.poll.models import Poll
-    from voteit.meeting.models import GroupRole
 
 __all__ = ("MainSubstActivePolicy",)
 
@@ -62,30 +64,48 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
             raise ElectoralRegisterError(
                 "Bad configuration, wrong roles returned. This should never be used without the correct meeting dialect."
             )
-        main_role: GroupRole = relevant_roles[0]
-        subst_role = relevant_roles[1]
-        groups_with_votes = self.meeting.groups.filter(votes__gt=0)
-        group_vote_power = {x: x.votes for x in groups_with_votes}
-        picked_voters: set[int] = set()
-        active_user_pks = list(
-            self.meeting.active_users.order_by("created").values_list(
-                "user_id", flat=True
+        main_role, subst_role = relevant_roles
+        # Preload active users, if enabled
+        if active_enabled_for_meeting(meeting=self.meeting):
+            active_user_pks = list(
+                self.meeting.active_users.order_by("created").values_list(
+                    "user_id", flat=True
+                )
             )
+            user_order = {pk: i for i, pk in enumerate(active_user_pks)}
+        else:
+            # We have no way of knowing order, using pk is as bad as any other method...?
+            user_order = {
+                pk: pk for pk in self.meeting.participants.values_list("pk", flat=True)
+            }
+        # Prefetch memberships once with the required filters
+        membership_qs = GroupMembership.objects.filter(
+            user_id__in=user_order,
+            role_id__in=[main_role.id, subst_role.id],
+        ).select_related("user", "role")
+        groups_with_votes = self.meeting.groups.filter(votes__gt=0).prefetch_related(
+            models.Prefetch("memberships", queryset=membership_qs)
         )
+        group_vote_power = {g: g.votes for g in groups_with_votes}
+        # Lookup-dict
+        # Structure: { group.pk: { role_id: [user_id, ...] } }
+        group_memberships = defaultdict(lambda: defaultdict(list))
+        for g in groups_with_votes:
+            for m in g.memberships.all():
+                group_memberships[g.pk][m.role_id].append(m.user_id)
+        # Sort each membership list once using the precomputed order
+        for gpk in group_memberships:
+            for role_id in group_memberships[gpk]:
+                group_memberships[gpk][role_id].sort(key=lambda pk: user_order[pk])
+        # Avoid queries during loop
         groups_vote_dist = defaultdict(set)
+        picked_voters: set[int] = set()
         for role in [main_role, subst_role]:
             for group in groups_with_votes:
-                # May have been exhausted
+                # If exhausted
                 if not group_vote_power[group]:
                     continue
-                memberships = group.memberships.filter(
-                    user__pk__in=active_user_pks, role=role
-                )
-                members = sorted(
-                    memberships.values_list("user_id", flat=True),
-                    key=lambda x: active_user_pks.index(x),
-                )
-                # Distribute votes
+                members = group_memberships[group.pk].get(role.id, [])
                 for user_pk in members:
                     if not group_vote_power[group]:
                         break
@@ -95,6 +115,7 @@ class MainSubstActivePolicy(ElectoralRegisterPolicy):
                     picked_voters.add(user_pk)
                     group_vote_power[group] -= 1
                     groups_vote_dist[group].add(user_pk)
+
         # And finally update GroupMembership objects vote distribution (to signal why a user has a vote)
         if update_memberships:
             for group, user_pks in groups_vote_dist.items():
