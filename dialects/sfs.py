@@ -5,14 +5,27 @@ except ImportError:
 from envelope.messages.common import Status
 from envelope.messages.errors import BadRequestError
 from envelope.utils import websocket_send
+from voteit.meeting.models import Meeting
 from voteit.core.rules import is_not_finished
 from voteit.meeting.models import MeetingGroup
-from voteit.meeting.permissions import MeetingGroupPermissions
-from voteit.meeting.permissions import MeetingPermissions
 from voteit.meeting.roles import ROLE_POTENTIAL_VOTER
 from voteit.messaging.decorators import incoming
 from voteit.poll.app.er_policies.group_votes_before_poll import GroupVotesBeforePoll
 from voteit.poll.schemas import VotersWeightsSchema
+
+try:  # compat
+    from voteit.meeting.permissions import MeetingGroupPermissions
+    from voteit.meeting.permissions import MeetingPermissions
+
+    PERM_VIEW_MEETING_GROUP = MeetingGroupPermissions.VIEW
+    PERM_CHANGE_MEETING = MeetingPermissions.VIEW
+
+except ImportError:
+    from voteit.core import PERM
+
+    PERM_VIEW_MEETING_GROUP = MeetingGroup.get_perm(PERM.VIEW)
+    PERM_CHANGE_MEETING = Meeting.get_perm(PERM.CHANGE)
+
 
 DELEGATION_LEADER_ROLE_ID = "leader"
 
@@ -24,7 +37,7 @@ class SFSSetDelegationVotersSchema(VotersWeightsSchema):
 @incoming
 class SFSSetDelegationVoters(ContextAction):
     name = "sfs.set_delegation_voters"
-    permission = MeetingGroupPermissions.VIEW
+    permission = PERM_VIEW_MEETING_GROUP
     model = MeetingGroup
     context_schema_attr = "meeting_group"
     schema = SFSSetDelegationVotersSchema
@@ -64,7 +77,7 @@ class SFSSetDelegationVoters(ContextAction):
             meeting_group.memberships.filter(
                 user=self.user, role__role_id=DELEGATION_LEADER_ROLE_ID
             ).exists()
-            or self.user.has_perm(MeetingPermissions.CHANGE, meeting)
+            or self.user.has_perm(PERM_CHANGE_MEETING, meeting)
         ):
             raise BadRequestError.from_message(
                 self,
