@@ -21,9 +21,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["dialects"]
+exclude = ["**/tests/**", "**/tests.py"]
 
 [tool.hatch.build.targets.sdist]
 packages = ["dialects"]
+exclude = ["**/tests/**", "**/tests.py"]
 
 
 [tool.ruff]
